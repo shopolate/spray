@@ -119,6 +119,7 @@ class HttpHeaderSpec extends Specification {
     import HttpCharsets._
     "be parsed correctly from various examples" in {
       HttpHeader("Content-Type", "application/pdf") mustEqual `Content-Type`(`application/pdf`)
+      HttpHeader("Content-Type", "multipart/form-data; boundary=ABC123") mustEqual `Content-Type`(ContentType(`multipart/form-data`, None, Some("ABC123")))
       HttpHeader("Content-Type", "text/plain; charset=utf8") mustEqual `Content-Type`(ContentType(`text/plain`, `UTF-8`))
     }
   }

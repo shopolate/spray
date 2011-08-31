@@ -82,7 +82,7 @@ private[spray] trait MiscDirectives {
    * one.
    */
   def respondWithMediaType(mediaType: MediaType) = transformResponse { response =>
-    response.copy(content = response.content.map(c => c.withContentType(ContentType(mediaType, c.contentType.charset))))
+    response.copy(content = response.content.map(c => c.withContentType(ContentType(mediaType, c.contentType.charset, None))))
   }
 
   /**
@@ -97,8 +97,8 @@ private[spray] trait MiscDirectives {
         import MediaTypes._
         import marshalling.DefaultUnmarshallers._
         (ctx.request.queryParams.get(parameterName), content.contentType) match {
-          case (Some(wrapper), ContentType(`application/json`, charset)) =>
-            HttpContent(ContentType(`application/javascript`, charset), wrapper + '(' + content.as[String].right.get + ')')
+          case (Some(wrapper), ContentType(`application/json`, charset, boundary)) =>
+            HttpContent(ContentType(`application/javascript`, charset, boundary), wrapper + '(' + content.as[String].right.get + ')')
           case _ => content
         }
       }

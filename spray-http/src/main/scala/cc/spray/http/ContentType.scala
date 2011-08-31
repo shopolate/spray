@@ -30,12 +30,14 @@ case class ContentTypeRange(mediaRange: MediaRange, charsetRange: HttpCharsetRan
   override def toString = "ContentTypeRange(" + value + ')'
 }
 
-case class ContentType(mediaType: MediaType, charset: Option[HttpCharset]) {
-  def value: String = charset match {
-    // don't print the charset parameter if it's the default charset
-    case Some(cs) if (!mediaType.isText || cs != `ISO-8859-1`)=> mediaType.value + "; charset=" + cs.value
-    case _ => mediaType.value
-  }
+case class ContentType(mediaType: MediaType, charset: Option[HttpCharset], boundary: Option[String]) {
+  def value: String = mediaType.value +
+                      (charset match {
+                        // don't print the charset parameter if it's the default charset
+                        case Some(cs) if (!mediaType.isText || cs != `ISO-8859-1`)=> "; charset=" + cs.value
+                        case _ => ""
+                      }) +
+                      boundary.map("; boundary=" + _).getOrElse("")
 
   override def equals(obj: Any) = obj match {
     case x: ContentType => mediaType == x.mediaType && charset == x.charset
@@ -44,8 +46,8 @@ case class ContentType(mediaType: MediaType, charset: Option[HttpCharset]) {
 }
 
 object ContentType {
-  def apply(mediaType: MediaType, charset: HttpCharset): ContentType = apply(mediaType, Some(charset))
-  def apply(mediaType: MediaType): ContentType = apply(mediaType, None)
+  def apply(mediaType: MediaType, charset: HttpCharset): ContentType = apply(mediaType, Some(charset), None)
+  def apply(mediaType: MediaType): ContentType = apply(mediaType, None, None)
   
   implicit def fromMimeType(mimeType: MediaType): ContentType = apply(mimeType) 
 }                     
