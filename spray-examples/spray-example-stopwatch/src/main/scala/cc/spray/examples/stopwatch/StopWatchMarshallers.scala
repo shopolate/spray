@@ -17,7 +17,7 @@ trait StopWatchMarshallers extends DefaultMarshallers {
     val canMarshalTo = ContentType(`text/html`) :: Nil
 
     def marshal(value: Map[Int, StopWatch], contentType: ContentType) = contentType match {
-      case x@ ContentType(`text/html`, _) => NodeSeqMarshaller.marshal(marshalToHtml(value), x)  
+      case x@ ContentType(`text/html`, _, _) => NodeSeqMarshaller.marshal(marshalToHtml(value), x)
       case _ => throw new IllegalArgumentException
     }
     
@@ -55,7 +55,7 @@ trait StopWatchMarshallers extends DefaultMarshallers {
     val canMarshalTo = ContentType(`text/html`) :: Nil
 
     def marshal(value: StopWatch, contentType: ContentType) = contentType match {
-      case x@ ContentType(`text/html`, _) => NodeSeqMarshaller.marshal(marshalToHtml(value), x)    
+      case x@ ContentType(`text/html`, _, _) => NodeSeqMarshaller.marshal(marshalToHtml(value), x)
       case _ => throw new IllegalArgumentException
     }
     

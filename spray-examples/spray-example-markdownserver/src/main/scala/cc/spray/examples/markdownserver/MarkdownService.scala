@@ -23,7 +23,7 @@ trait MarkdownService extends Directives {
   def rewritePath(path: String) = (if (path.isEmpty) "index" else path) + ".markdown"
   
   def markdown2Html(content: HttpContent) = content.contentType match {
-    case ContentType(MarkdownType, _) => {
+    case ContentType(MarkdownType, _, _) => {
       val html = new PegDownProcessor(Extensions.ALL).markdownToHtml(content.as[String].right.get) 
       HttpContent(ContentType(`text/html`), html) 
     }

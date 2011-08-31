@@ -89,7 +89,7 @@ trait StopWatchService extends Directives with StopWatchMarshallers {
   }
   
   def wrapWithBackLink(content: HttpContent) = content.contentType match {
-    case ContentType(`text/plain`, charset) => {
+    case ContentType(`text/plain`, charset, boundary) => {
       val html =
         <html>
           <body>
@@ -97,7 +97,7 @@ trait StopWatchService extends Directives with StopWatchMarshallers {
             <a href="/watches">Back</a>
           </body>
         </html>
-      NodeSeqMarshaller.marshal(html, ContentType(`text/html`, charset))
+      NodeSeqMarshaller.marshal(html, ContentType(`text/html`, charset, boundary))
     }
     case _ => content
   }
