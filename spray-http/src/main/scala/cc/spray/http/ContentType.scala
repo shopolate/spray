@@ -40,7 +40,7 @@ case class ContentType(mediaType: MediaType, charset: Option[HttpCharset], bound
                       boundary.map("; boundary=" + _).getOrElse("")
 
   override def equals(obj: Any) = obj match {
-    case x: ContentType => mediaType == x.mediaType && charset == x.charset
+    case x: ContentType => mediaType == x.mediaType && charset == x.charset && boundary == x.boundary
     case _ => false
   }
 }

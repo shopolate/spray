@@ -29,7 +29,8 @@ class Project(info: ProjectInfo) extends DefaultProject(info) with AkkaBaseProje
     val parboiledC = "org.parboiled" % "parboiled-core" % "1.0.1" % "compile" withSources()
     val parboiledS = "org.parboiled" % "parboiled-scala" % "1.0.1" % "compile" withSources()
     val asyncHttp  = "com.ning" % "async-http-client" % "1.6.4" % "compile" withSources()
-    
+    val mimepull   = "org.jvnet" % "mimepull" % "1.6" % "compile" withSources()
+
     // provided
     val sprayJson          = "cc.spray.json" %% "spray-json" % "1.0.0" % "provided" withSources()
     val servlet30          = "org.glassfish" % "javax.servlet" % "3.0" % "provided"
@@ -137,6 +138,7 @@ class Project(info: ProjectInfo) extends DefaultProject(info) with AkkaBaseProje
     val tomcat6            = Deps.tomcat6 
     val deft               = Deps.deft
     val specs2      = Deps.specs2
+    val mimepull           = Deps.mimepull
   }
   
   class ClientProject(info: ProjectInfo) extends ModuleProject(info) with AkkaProject {

@@ -104,6 +104,13 @@ class HttpHeaderSpec extends Specification {
     }
   }
 
+  "Header 'Content-Disposition'" should {
+    "be parsed correctly from various examples" in {
+      HttpHeader("Content-Disposition", "form-data") mustEqual `Content-Disposition`(ContentDisposition("form-data", Map.empty[String, String]))
+      HttpHeader("Content-Disposition", "attachment; name=\"field1\"; filename=\"file.txt\"") mustEqual `Content-Disposition`(ContentDisposition("attachment", Map("name" -> "field1", "filename" -> "file.txt")))
+    }
+  }
+
   "Header 'Content-Encoding'" should {
     import HttpEncodings._
     "be parsed correctly from various examples" in {

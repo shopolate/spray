@@ -22,6 +22,7 @@ import spray.http._
 import spray.marshalling._
 import spray.utils._
 import akka.dispatch.Future
+import java.io.InputStream
 
 package object spray {
 
@@ -55,4 +56,5 @@ package object spray {
   implicit def pimpRegex(regex: Regex) = new PimpedRegex(regex)
   implicit def pimpFuture[F <: Future[_]](future: F) = new PimpedFuture(future)
   implicit def pimpString(s: String) = new PimpedString(s)
+  implicit def pimpInputStream(stream: InputStream) = new PimpedInputStream(stream)
 }

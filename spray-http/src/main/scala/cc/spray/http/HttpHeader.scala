@@ -88,6 +88,10 @@ object HttpHeaders {
     def value = encoding.value
   }
   
+  case class `Content-Disposition`(contentDisposition: ContentDisposition) extends HttpHeader {
+    def value = contentDisposition.value
+  }
+
   case class `Content-Length`(length: Int) extends HttpHeader {
     def value = length.toString
   }

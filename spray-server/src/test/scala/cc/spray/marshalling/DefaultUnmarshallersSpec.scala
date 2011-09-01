@@ -22,7 +22,7 @@ import MediaTypes._
 import HttpCharsets._
 import xml.NodeSeq
 import test.AbstractSprayTest
-import utils.FormContent
+import utils.{MultiPartFormData, FormContent}
 
 class DefaultUnmarshallersSpec extends AbstractSprayTest {
   
@@ -72,4 +72,24 @@ class DefaultUnmarshallersSpec extends AbstractSprayTest {
     }
   }
 
+  "The MultiPartFormDataUnmarshaller" should {
+    "correctly unmarshal HTML form content with one element" in {
+      test(HttpRequest(content = Some(HttpContent(ContentType(`multipart/form-data`, Some(`UTF-8`), Some("XYZABC")),
+        "--XYZABC\ncontent-disposition: form-data; name=\"email\"\n\ntest@there.com\n--XYZABC--")))) {
+        content(as[MultiPartFormData]) { multiPart => _.complete(multiPart("email").content.as[String].right.get) }
+      }.response.content.as[String] mustEqual Right("test@there.com")
+    }
+    "correctly unmarshal HTML form content mixed with a file" in {
+      test(HttpRequest(content = Some(HttpContent(ContentType(`multipart/form-data`, Some(`UTF-8`), Some("XYZABC")),
+        "--XYZABC\ncontent-disposition: form-data; name=\"email\"\n\ntest@there.com\n--XYZABC\ncontent-disposition: form-data; name=\"userfile\"; filename=\"test.dat\"\nContent-Type: application/octet-stream\nContent-Transfer-Encoding: binary\n\nfilecontent\n--XYZABC--")))) {
+        content(as[MultiPartFormData]) { multiPart => _.complete(multiPart("email").content.as[String].right.get + multiPart("userfile").content.as[String].right.get) }
+      }.response.content.as[String] mustEqual Right("test@there.comfilecontent")
+    }
+    "reject illegal form content" in {
+      test(HttpRequest(content = Some(HttpContent(ContentType(`multipart/form-data`, Some(`UTF-8`), Some("XYZABC")),
+        "--noboundary--")))) {
+        content(as[MultiPartFormData]) { echoComplete }
+      }.rejections mustEqual Set(MalformedRequestContentRejection("Missing start boundary"))
+    }
+  }
 }

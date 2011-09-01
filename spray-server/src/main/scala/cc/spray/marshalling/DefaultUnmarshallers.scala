@@ -17,6 +17,7 @@
 package cc.spray
 package marshalling
 
+import collection.JavaConversions._
 import http._
 import MediaTypes._
 import MediaRanges._
@@ -24,7 +25,10 @@ import HttpCharsets._
 import xml.{XML, NodeSeq}
 import java.nio.ByteBuffer
 import java.net.URLDecoder
-import utils.FormContent
+import org.jvnet.mimepull.MIMEMessage
+import utils.{BodyPart, MultiPartFormData, FormContent}
+import cc.spray._
+import cc.spray.http.HttpHeaders._
 
 trait DefaultUnmarshallers {
   
@@ -79,7 +83,33 @@ trait DefaultUnmarshallers {
     }
   }
   
-  implicit def pimpHttpContentWithAs1(c: HttpContent): HttpContentExtractor = new HttpContentExtractor(Some(c)) 
+  implicit object MultiPartFormDataUnmarshaller extends UnmarshallerBase[MultiPartFormData] {
+    val canUnmarshalFrom = ContentTypeRange(`multipart/form-data`) :: Nil
+
+    def unmarshal(content: HttpContent) = protect {
+      val mimeMsg = new MIMEMessage(content.inputStream, content.contentType.boundary.getOrElse(""))
+      val parts = mimeMsg.getAttachments.map { part =>
+        val content = part.readOnce().readAll.toArray
+        val contentType = HttpHeader("Content-Type", part.getContentType) match {
+          case `Content-Type`(t) => t
+          case _ => ContentType(`text/plain`) // RFC2388: each part has an optional "Content-Type", which defaults to text/plain
+        }
+        val name = part.getHeader("Content-Disposition") match {
+          case buffer if buffer != null => HttpHeader("Content-Disposition", buffer.head) match {
+            case `Content-Disposition`(ContentDisposition(_, params)) if params.contains("name") => Some(params("name"))
+            case _ => None
+          }
+          case _ => None
+        }
+        BodyPart(name, HttpContent(contentType, content))
+      }
+      MultiPartFormData(parts.toList)
+    }
+
+    private def nullOption[A](obj: A): Option[A] = if (obj == null) None else Some(obj)
+  }
+
+  implicit def pimpHttpContentWithAs1(c: HttpContent): HttpContentExtractor = new HttpContentExtractor(Some(c))
   implicit def pimpHttpContentWithAs2(c: Option[HttpContent]): HttpContentExtractor = new HttpContentExtractor(c)
   
   class HttpContentExtractor(content: Option[HttpContent]) {
