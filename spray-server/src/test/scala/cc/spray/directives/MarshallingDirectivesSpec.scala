@@ -27,18 +27,20 @@ import marshalling.{UnmarshallerBase, MarshallerBase}
 import xml.{XML, NodeSeq}
 
 class MarshallingDirectivesSpec extends AbstractSprayTest {
-  
-  implicit object IntUnmarshaller extends UnmarshallerBase[Int] {
+
+  case class CustomContent(text : String)
+
+  implicit object CustomContentUnmarshaller extends UnmarshallerBase[CustomContent] {
     val canUnmarshalFrom = ContentTypeRange(`text/xml`, `ISO-8859-2`) ::
                            ContentTypeRange(`text/html`) ::
                            ContentTypeRange(`application/xhtml+xml`) :: Nil
 
-    def unmarshal(content: HttpContent) = protect { XML.load(content.inputStream).text.toInt }
+    def unmarshal(content: HttpContent) = protect { CustomContent(XML.load(content.inputStream).text) }
   }
   
-  implicit object IntMarshaller extends MarshallerBase[Int] {
+  implicit object CustomContentMarshaller extends MarshallerBase[CustomContent] {
     val canMarshalTo = ContentType(`application/xhtml+xml`) :: ContentType(`text/xml`, `UTF-8`) :: Nil
-    def marshal(value: Int, contentType: ContentType) = NodeSeqMarshaller.marshal(<int>{value}</int>, contentType)
+    def marshal(value: CustomContent, contentType: ContentType) = NodeSeqMarshaller.marshal(<custom-content>{value.text}</custom-content>, contentType)
   }
   
   "The 'contentAs' directive" should {
@@ -80,17 +82,17 @@ class MarshallingDirectivesSpec extends AbstractSprayTest {
   "The 'produce' directive" should {
     "provide a completion function converting custom objects to HttpContent using the in-scope marshaller" in {
       test(HttpRequest(GET)) {
-        produce(instanceOf[Int]) { prod =>
-          _ => prod(42)
+        produce(instanceOf[CustomContent]) { prod =>
+          _ => prod(CustomContent("abc"))
         }
-      }.response.content mustEqual Some(HttpContent(ContentType(`application/xhtml+xml`, `ISO-8859-1`), "<int>42</int>"))
+      }.response.content mustEqual Some(HttpContent(ContentType(`application/xhtml+xml`, `ISO-8859-1`), "<custom-content>abc</custom-content>"))
     }
     "return a UnacceptedResponseContentTypeRejection rejection if no acceptable marshaller is in scope" in {
       test(HttpRequest(GET, headers = List(`Accept`(`text/css`)))) {
-        produce(instanceOf[Int]) { prod =>
-          _ => prod(42)
+        produce(instanceOf[CustomContent]) { prod =>
+          _ => prod(CustomContent("abc"))
         }
-      }.rejections mustEqual Set(UnacceptedResponseContentTypeRejection(IntMarshaller.canMarshalTo))
+      }.rejections mustEqual Set(UnacceptedResponseContentTypeRejection(CustomContentMarshaller.canMarshalTo))
     }
     "convert the response content to an accepted charset" in {
       test(HttpRequest(GET, headers = List(`Accept-Charset`(`UTF-8`)))) {
@@ -102,24 +104,24 @@ class MarshallingDirectivesSpec extends AbstractSprayTest {
   }
   
   "The 'handleWith' directive" should {
-    def times2(x: Int) = x * 2
+    def times2(x: CustomContent) = CustomContent(x.text + x.text)
     "support proper round-trip content unmarshalling/marshalling to and from a function" in {
       test(HttpRequest(PUT, headers = List(Accept(`text/xml`)),
-        content = Some(HttpContent(ContentType(`text/html`), "<int>42</int>")))) {
+        content = Some(HttpContent(ContentType(`text/html`), "<custom-content>abc</custom-content>")))) {
         handleWith(times2)
-      }.response.content mustEqual Some(HttpContent(ContentType(`text/xml`, `UTF-8`), "<int>84</int>"))
+      }.response.content mustEqual Some(HttpContent(ContentType(`text/xml`, `UTF-8`), "<custom-content>abcabc</custom-content>"))
     }
     "result in UnsupportedRequestContentTypeRejection rejection if there is no unmarshaller supporting the requests charset" in {
       test(HttpRequest(PUT, headers = List(Accept(`text/xml`)),
-        content = Some(HttpContent(ContentType(`text/xml`, `UTF-8`), "<int>42</int>")))) {
+        content = Some(HttpContent(ContentType(`text/xml`, `UTF-8`), "<custom-content>abc</custom-content>")))) {
         handleWith(times2)
-      }.rejections mustEqual Set(UnsupportedRequestContentTypeRejection(IntUnmarshaller.canUnmarshalFrom))
+      }.rejections mustEqual Set(UnsupportedRequestContentTypeRejection(CustomContentUnmarshaller.canUnmarshalFrom))
     }
     "result in an UnacceptedResponseContentTypeRejection rejection if there is no marshaller supporting the requests Accept-Charset header" in {
       test(HttpRequest(PUT, headers = List(Accept(`text/xml`), `Accept-Charset`(`UTF-16`)),
-        content = Some(HttpContent(ContentType(`text/html`), "<int>42</int>")))) {
+        content = Some(HttpContent(ContentType(`text/html`), "<custom-content>abc</custom-content>")))) {
         handleWith(times2)
-      }.rejections mustEqual Set(UnacceptedResponseContentTypeRejection(IntMarshaller.canMarshalTo))
+      }.rejections mustEqual Set(UnacceptedResponseContentTypeRejection(CustomContentMarshaller.canMarshalTo))
     }
   }
   

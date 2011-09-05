@@ -34,6 +34,86 @@ class DefaultUnmarshallersSpec extends AbstractSprayTest {
     }
   }
 
+  "The SymbolUnmarshaller" should {
+    "decode `text/plain` content in ISO-8859-1 to a symbol" in {
+      test(HttpRequest(content = Some(HttpContent("someSymbol")))) {
+        content(as[Symbol]) { echoComplete }
+      }.response.content.as[String].right.get mustEqual "'someSymbol"
+    }
+  }
+
+  "The IntUnmarshaller" should {
+    "decode `text/plain` content in ISO-8859-1 to a Int" in {
+      test(HttpRequest(content = Some(HttpContent("-12345")))) {
+        content(as[Int]) { echoComplete }
+      }.response.content.as[String] mustEqual Right("-12345")
+    }
+  }
+
+  "The HexIntUnmarshaller" should {
+    "decode `text/plain` content in ISO-8859-1 to a Int" in {
+      test(HttpRequest(content = Some(HttpContent("1A")))) {
+        content(DefaultUnmarshallers.HexIntUnmarshaller) { echoComplete }
+      }.response.content.as[String] mustEqual Right("26")
+    }
+  }
+
+  "The LongUnmarshaller" should {
+    "decode `text/plain` content in ISO-8859-1 to a Long" in {
+      test(HttpRequest(content = Some(HttpContent("-12345")))) {
+        content(as[Int]) { echoComplete }
+      }.response.content.as[String] mustEqual Right("-12345")
+    }
+  }
+
+  "The HexLongUnmarshaller" should {
+    "decode `text/plain` content in ISO-8859-1 to a Long" in {
+      test(HttpRequest(content = Some(HttpContent("1A")))) {
+        content(DefaultUnmarshallers.HexLongUnmarshaller) { echoComplete }
+      }.response.content.as[String] mustEqual Right("26")
+    }
+  }
+
+  "The DoubleUnmarshaller" should {
+    "decode `text/plain` content in ISO-8859-1 to a Double" in {
+      test(HttpRequest(content = Some(HttpContent("4500.23")))) {
+        content(as[Double]) { echoComplete }
+      }.response.content.as[String] mustEqual Right("4500.23")
+    }
+  }
+
+  "The FloatUnmarshaller" should {
+    "decode `text/plain` content in ISO-8859-1 to a Float" in {
+      test(HttpRequest(content = Some(HttpContent("4500.23")))) {
+        content(as[Float]) { echoComplete }
+      }.response.content.as[String] mustEqual Right("4500.23")
+    }
+  }
+
+  "The ShortUnmarshaller" should {
+    "decode `text/plain` content in ISO-8859-1 to a Short" in {
+      test(HttpRequest(content = Some(HttpContent("12345")))) {
+        content(as[Short]) { echoComplete }
+      }.response.content.as[String] mustEqual Right("12345")
+    }
+  }
+
+  "The ByteUnmarshaller" should {
+    "decode `text/plain` content in ISO-8859-1 to a Byte" in {
+      test(HttpRequest(content = Some(HttpContent("-123")))) {
+        content(as[Byte]) { echoComplete }
+      }.response.content.as[String] mustEqual Right("-123")
+    }
+  }
+
+  "The BooleanUnmarshaller" should {
+    "decode `text/plain` content in ISO-8859-1 to a Boolean" in {
+      test(HttpRequest(content = Some(HttpContent("false")))) {
+        content(as[Boolean]) { echoComplete }
+      }.response.content.as[String] mustEqual Right("false")
+    }
+  }
+
   "The CharArrayUnmarshaller" should {
     "decode `text/plain` content in ISO-8859-1 to char arrays" in {
       test(HttpRequest(content = Some(HttpContent("Hällö")))) {

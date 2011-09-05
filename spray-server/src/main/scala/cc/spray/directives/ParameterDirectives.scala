@@ -17,17 +17,20 @@
 package cc.spray
 package directives
 
+import http.HttpContent
+import marshalling.{DefaultUnmarshallers, CantUnmarshal, UnmarshalWith}
+
 private[spray] trait ParameterDirectives {
   this: BasicDirectives =>
 
-  private type PM[A] = ParameterMatcher[A]
+  private type FM[A] = FieldMatcher[A]
   
   /**
    * Returns a Route that rejects the request if a query parameter with the given name cannot be found.
    * If it can be found the parameters value is extracted and passed as argument to the inner Route building function. 
    */
-  def parameter[A](pm: PM[A]): SprayRoute1[A] = filter1[A] { ctx =>
-    pm(ctx.request.queryParams) match {
+  def parameter[A](pm: FM[A]): SprayRoute1[A] = filter1[A] { ctx =>
+    pm(ctx.request.queryParams.mapValues(HttpContent.apply(_))) match {
       case Right(value) => Pass.withTransform(value) {
         _.cancelRejections {
           _ match {
@@ -51,13 +54,13 @@ private[spray] trait ParameterDirectives {
    * Returns a Route that rejects the request if a query parameter with the given name cannot be found.
    * If it can be found the parameters value is extracted and passed as argument to the inner Route building function.
    */
-  def parameters[A](a: PM[A]): SprayRoute1[A] = parameter(a)
+  def parameters[A](a: FM[A]): SprayRoute1[A] = parameter(a)
 
   /**
    * Returns a Route that rejects the request if the query parameters with the given names cannot be found.
    * If it can be found the parameter values are extracted and passed as arguments to the inner Route building function.
    */
-  def parameters[A, B](a: PM[A], b: PM[B]): SprayRoute2[A, B] = {
+  def parameters[A, B](a: FM[A], b: FM[B]): SprayRoute2[A, B] = {
     parameter(a) & parameter(b)
   }  
 
@@ -65,7 +68,7 @@ private[spray] trait ParameterDirectives {
    * Returns a Route that rejects the request if the query parameters with the given names cannot be found.
    * If it can be found the parameter values are extracted and passed as arguments to the inner Route building function.
    */
-  def parameters[A, B, C](a: PM[A], b: PM[B], c: PM[C]): SprayRoute3[A, B, C] = {
+  def parameters[A, B, C](a: FM[A], b: FM[B], c: FM[C]): SprayRoute3[A, B, C] = {
     parameters(a, b) & parameter(c)
   }
 
@@ -73,7 +76,7 @@ private[spray] trait ParameterDirectives {
    * Returns a Route that rejects the request if the query parameters with the given names cannot be found.
    * If it can be found the parameter values are extracted and passed as arguments to the inner Route building function.
    */
-  def parameters[A, B, C, D](a: PM[A], b: PM[B], c: PM[C], d: PM[D]): SprayRoute4[A, B, C, D] = {
+  def parameters[A, B, C, D](a: FM[A], b: FM[B], c: FM[C], d: FM[D]): SprayRoute4[A, B, C, D] = {
     parameters(a, b, c) & parameter(d)
   }
 
@@ -81,7 +84,7 @@ private[spray] trait ParameterDirectives {
    * Returns a Route that rejects the request if the query parameters with the given names cannot be found.
    * If it can be found the parameter values are extracted and passed as arguments to the inner Route building function.
    */
-  def parameters[A, B, C, D, E](a: PM[A], b: PM[B], c: PM[C], d: PM[D], e: PM[E]): SprayRoute5[A, B, C, D, E] = {
+  def parameters[A, B, C, D, E](a: FM[A], b: FM[B], c: FM[C], d: FM[D], e: FM[E]): SprayRoute5[A, B, C, D, E] = {
     parameters(a, b, c, d) & parameter(e)
   }
   
@@ -89,8 +92,8 @@ private[spray] trait ParameterDirectives {
    * Returns a Route that rejects the request if the query parameters with the given names cannot be found.
    * If it can be found the parameter values are extracted and passed as arguments to the inner Route building function.
    */
-  def parameters[A, B, C, D, E, F](a: PM[A], b: PM[B], c: PM[C], d: PM[D], e: PM[E],
-                                   f: PM[F]): SprayRoute6[A, B, C, D, E, F] = {
+  def parameters[A, B, C, D, E, F](a: FM[A], b: FM[B], c: FM[C], d: FM[D], e: FM[E],
+                                   f: FM[F]): SprayRoute6[A, B, C, D, E, F] = {
     parameters(a, b, c, d, e) & parameter(f)
   }
   
@@ -98,8 +101,8 @@ private[spray] trait ParameterDirectives {
    * Returns a Route that rejects the request if the query parameters with the given names cannot be found.
    * If it can be found the parameter values are extracted and passed as arguments to the inner Route building function.
    */
-  def parameters[A, B, C, D, E, F, G](a: PM[A], b: PM[B], c: PM[C], d: PM[D], e: PM[E],
-                                      f: PM[F], g: PM[G]): SprayRoute7[A, B, C, D, E, F, G] = {
+  def parameters[A, B, C, D, E, F, G](a: FM[A], b: FM[B], c: FM[C], d: FM[D], e: FM[E],
+                                      f: FM[F], g: FM[G]): SprayRoute7[A, B, C, D, E, F, G] = {
     parameters(a, b, c, d, e, f) & parameter(g)
   }
 
@@ -107,8 +110,8 @@ private[spray] trait ParameterDirectives {
    * Returns a Route that rejects the request if the query parameters with the given names cannot be found.
    * If it can be found the parameter values are extracted and passed as arguments to the inner Route building function.
    */
-  def parameters[A, B, C, D, E, F, G, H](a: PM[A], b: PM[B], c: PM[C], d: PM[D], e: PM[E],
-                                         f: PM[F], g: PM[G], h: PM[H]): SprayRoute8[A, B, C, D, E, F, G, H] = {
+  def parameters[A, B, C, D, E, F, G, H](a: FM[A], b: FM[B], c: FM[C], d: FM[D], e: FM[E],
+                                         f: FM[F], g: FM[G], h: FM[H]): SprayRoute8[A, B, C, D, E, F, G, H] = {
     parameters(a, b, c, d, e, f, g) & parameter(h)
   }
 
@@ -116,8 +119,8 @@ private[spray] trait ParameterDirectives {
    * Returns a Route that rejects the request if the query parameters with the given names cannot be found.
    * If it can be found the parameter values are extracted and passed as arguments to the inner Route building function.
    */
-  def parameters[A, B, C, D, E, F, G, H, I](a: PM[A], b: PM[B], c: PM[C], d: PM[D], e: PM[E],
-                                            f: PM[F], g: PM[G], h: PM[H], i: PM[I]): SprayRoute9[A, B, C, D, E, F, G, H, I] = {
+  def parameters[A, B, C, D, E, F, G, H, I](a: FM[A], b: FM[B], c: FM[C], d: FM[D], e: FM[E],
+                                            f: FM[F], g: FM[G], h: FM[H], i: FM[I]): SprayRoute9[A, B, C, D, E, F, G, H, I] = {
     parameters(a, b, c, d, e, f, g, h) & parameter(i)
   }
   
@@ -125,44 +128,66 @@ private[spray] trait ParameterDirectives {
    * Returns a Route that rejects the request if the query parameter with the given name cannot be found or does not
    * have the required value.
    */
-  def parameter(p: RequiredParameterMatcher) = filter { ctx => if (p(ctx.request.queryParams)) Pass() else Reject() }
+  def parameter(p: RequiredFieldMatcher) = filter { ctx => if (p(ctx.request.queryParams)) Pass() else Reject() }
 
   /**
    * Returns a Route that rejects the request if the query parameter with the given name cannot be found or does not
    * have the required value.
    */
-  def parameters(p: RequiredParameterMatcher, more: RequiredParameterMatcher*) = {
+  def parameters(p: RequiredFieldMatcher, more: RequiredFieldMatcher*) = {
     val allRPM = p +: more
     filter { ctx => if (allRPM.forall(_(ctx.request.queryParams))) Pass() else Reject() }
   }
 
   implicit def fromSymbol(name: Symbol) = fromString(name.name)  
   
-  implicit def fromString(name: String) = new ParameterMatcher[String](name, SimpleParsers.SimpleStringParser)
+  implicit def fromString(name: String) = new SimpleFieldMatcher(name, DefaultUnmarshallers.StringUnmarshaller)
 }
 
-class ParameterMatcher[A](val name: String, val parser: SimpleParser[A]) {
-  def apply(params: Map[String, String]): Either[Rejection, A] = {
-    params.get(name) match {
-      case Some(value) => parser(value).left.map(MalformedQueryParamRejection(_, Some(name)))
+trait FieldMatcher[A] {
+  val name : String
+
+  def apply(fields: FieldMap): Either[Rejection, A]
+
+  def ? = new OptionWrappingFieldMatcher(this)
+  
+  def ? [B :Unmarshaller](default: B) = new SimpleFieldMatcher[B](name, cc.spray.unmarshaller[B]) {
+    override def notFound = Right(default)
+  }
+  
+  def as[B :Unmarshaller] = new SimpleFieldMatcher[B](name, cc.spray.unmarshaller[B])
+  
+  def ! [B :Unmarshaller](requiredValue: B): RequiredFieldMatcher = { params =>
+    new SimpleFieldMatcher[B](name, cc.spray.unmarshaller[B])
+      .apply(params.mapValues(HttpContent.apply(_)))
+      .right
+      .toOption == Some(requiredValue)
+  }
+}
+
+class SimpleFieldMatcher[A](val name: String, val unmarshaller: Unmarshaller[A]) extends FieldMatcher[A] {
+  def apply(fields: FieldMap): Either[Rejection, A] = {
+    fields.get(name) match {
+      case Some(value) => unmarshaller(value.contentType) match {
+        case UnmarshalWith(converter) => converter(value) match {
+          case Left(MalformedRequestContentRejection(msg)) => Left(MalformedQueryParamRejection(msg, Some(name)))
+          case other => other
+        }
+        case CantUnmarshal(onlyFrom) => Left(UnsupportedRequestContentTypeRejection(onlyFrom)) // This one does not really make sense in the case of parameters. Should we have a dedicated rejection?
+      }
       case None => notFound
     }
   }
 
   protected def notFound: Either[Rejection, A] = Left(MissingQueryParamRejection(name))
-  
-  def ? = new ParameterMatcher[Option[A]](name,
-    new SimpleParser[Option[A]] { def apply(s: String) = parser(s).fold(Left(_), x => Right(Some(x))) }) {
-    override def notFound = Right(None)
-  }
-  
-  def ? [B :SimpleParser](default: B) = new ParameterMatcher[B](name, simpleParser[B]) {
-    override def notFound = Right(default)
-  }
-  
-  def as[B :SimpleParser] = new ParameterMatcher[B](name, simpleParser[B])
-  
-  def ! [B :SimpleParser](requiredValue: B): RequiredParameterMatcher = {
-    _.get(name).flatMap(simpleParser[B].apply(_).right.toOption) == Some(requiredValue)
+}
+
+class OptionWrappingFieldMatcher[A](wrapped : FieldMatcher[A]) extends FieldMatcher[Option[A]] {
+  val name = wrapped.name
+
+  override def apply(fields: FieldMap): Either[Rejection, Option[A]] = wrapped.apply(fields) match {
+    case Right(value) => Right(Some(value))
+    case Left(MissingQueryParamRejection(_)) => Right(None)
+    case Left(other) => Left(other)
   }
 }

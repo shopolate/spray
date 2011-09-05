@@ -44,4 +44,4 @@ trait UnmarshallerBase[A] extends Unmarshaller[A] {
       case e: Exception => Left(MalformedRequestContentRejection(e.getMessage))
     }
   }   
-} 
+}

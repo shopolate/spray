@@ -41,6 +41,109 @@ trait DefaultUnmarshallers {
     }
   }
 
+  trait StringValueUnmarshaller[A] extends UnmarshallerBase[A] {
+    val canUnmarshalFrom = ContentTypeRange(`text/plain`) :: Nil // we can convert only from pure text
+    def unmarshal(value : String): Either[Rejection, A]
+    def unmarshal(content: HttpContent) = try {
+      unmarshal(StringUnmarshaller.unmarshal(content).right.get)
+    }
+    catch {
+      case e : Exception => Left(MalformedRequestContentRejection(e.getMessage))
+    }
+  }
+
+  implicit object SymbolUnmarshaller extends StringValueUnmarshaller[Symbol] {
+    def unmarshal(value : String) = Right(Symbol(value))
+  }
+
+  implicit object IntUnmarshaller extends StringValueUnmarshaller[Int] {
+    def unmarshal(value : String) = {
+      try {
+        Right(value.toInt)
+      } catch {
+        case _: NumberFormatException => Left(MalformedRequestContentRejection("'" + value + "' is not a valid 32-bit integer value"))
+      }
+    }
+  }
+
+  object HexIntUnmarshaller extends StringValueUnmarshaller[Int] {
+    def unmarshal(value : String) = {
+      try {
+        Right(Integer.parseInt(value, 16))
+      } catch {
+        case _: NumberFormatException => Left(MalformedRequestContentRejection("'" + value + "' is not a valid 32-bit hexadecimal integer value"))
+      }
+    }
+  }
+
+  implicit object LongUnmarshaller extends StringValueUnmarshaller[Long] {
+    def unmarshal(value : String) = {
+      try {
+        Right(value.toLong)
+      } catch {
+        case _: NumberFormatException => Left(MalformedRequestContentRejection("'" + value + "' is not a valid 64-bit integer value"))
+      }
+    }
+  }
+
+  object HexLongUnmarshaller extends StringValueUnmarshaller[Long] {
+    def unmarshal(value : String) = {
+      try {
+        Right(java.lang.Long.parseLong(value, 16))
+      } catch {
+        case _: NumberFormatException => Left(MalformedRequestContentRejection("'" + value + "' is not a valid 64-bit hexadecimal integer value"))
+      }
+    }
+  }
+
+  implicit object DoubleUnmarshaller extends StringValueUnmarshaller[Double] {
+    def unmarshal(value : String) = {
+      try {
+        Right(value.toDouble)
+      } catch {
+        case _: NumberFormatException => Left(MalformedRequestContentRejection("'" + value + "' is not a valid floating point value"))
+      }
+    }
+  }
+
+  implicit object FloatUnmarshaller extends StringValueUnmarshaller[Float] {
+    def unmarshal(value : String) = {
+      try {
+        Right(value.toFloat)
+      } catch {
+        case _: NumberFormatException => Left(MalformedRequestContentRejection("'" + value + "' is not a valid floating point value"))
+      }
+    }
+  }
+
+  implicit object ShortUnmarshaller extends StringValueUnmarshaller[Short] {
+    def unmarshal(value : String) = {
+      try {
+        Right(value.toShort)
+      } catch {
+        case _: NumberFormatException => Left(MalformedRequestContentRejection("'" + value + "' is not a valid 16-bit integer value"))
+      }
+    }
+  }
+
+  implicit object ByteUnmarshaller extends StringValueUnmarshaller[Byte] {
+    def unmarshal(value : String) = {
+      try {
+        Right(value.toByte)
+      } catch {
+        case _: NumberFormatException => Left(MalformedRequestContentRejection("'" + value + "' is not a valid 8-bit integer value"))
+      }
+    }
+  }
+
+  implicit object BooleanUnmarshaller extends StringValueUnmarshaller[Boolean] {
+    def unmarshal(value : String) = value.toLowerCase match {
+      case "true" | "yes" | "on" => Right(true)
+      case "false" | "no" | "off" => Right(false)
+      case x => Left(MalformedRequestContentRejection("'" + x + "' is not a valid Boolean value"))
+    }
+  }
+
   implicit object CharArrayUnmarshaller extends UnmarshallerBase[Array[Char]] {
     val canUnmarshalFrom = ContentTypeRange(`*/*`) :: Nil // we can convert anything to a char array
 
