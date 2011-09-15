@@ -30,7 +30,7 @@ private[spray] trait ParameterDirectives {
    * If it can be found the parameters value is extracted and passed as argument to the inner Route building function. 
    */
   def parameter[A](pm: FM[A]): SprayRoute1[A] = filter1[A] { ctx =>
-    pm(ctx.request.queryParams.mapValues(HttpContent.apply(_))) match {
+    pm(extractQueryParamsContent(ctx)) match {
       case Right(value) => Pass.withTransform(value) {
         _.cancelRejections {
           _ match {
@@ -40,15 +40,14 @@ private[spray] trait ParameterDirectives {
           }
         }
       }
-      case Left(x: MissingQueryParamRejection) => Reject(x)
-      case Left(x) => new Reject(Set(x,
-        RejectionRejection {
-          case MissingQueryParamRejection(n) if n == pm.name => true
-          case _ => false
-        }
-      ))
+      case Left(MissingField(x)) => Reject(MissingQueryParamRejection(x))
+      case Left(MalformedField(error, param)) => Reject(MalformedQueryParamRejection(error, Some(param)))
+      case Left(ContentIncompatibility(onlyFrom, _)) => Reject(UnsupportedRequestContentTypeRejection(onlyFrom)) // Not exactly the right rejection.
     }
   }
+
+  private def extractQueryParamsContent(ctx : RequestContext) = ctx.request.queryParams.mapValues(HttpContent(_))
+
 
   /**
    * Returns a Route that rejects the request if a query parameter with the given name cannot be found.
@@ -128,7 +127,7 @@ private[spray] trait ParameterDirectives {
    * Returns a Route that rejects the request if the query parameter with the given name cannot be found or does not
    * have the required value.
    */
-  def parameter(p: RequiredFieldMatcher) = filter { ctx => if (p(ctx.request.queryParams)) Pass() else Reject() }
+  def parameter(p: RequiredFieldMatcher) = filter { ctx => if (p(extractQueryParamsContent(ctx))) Pass() else Reject() }
 
   /**
    * Returns a Route that rejects the request if the query parameter with the given name cannot be found or does not
@@ -136,7 +135,7 @@ private[spray] trait ParameterDirectives {
    */
   def parameters(p: RequiredFieldMatcher, more: RequiredFieldMatcher*) = {
     val allRPM = p +: more
-    filter { ctx => if (allRPM.forall(_(ctx.request.queryParams))) Pass() else Reject() }
+    filter { ctx => if (allRPM.forall(_(extractQueryParamsContent(ctx)))) Pass() else Reject() }
   }
 
   implicit def fromSymbol(name: Symbol) = fromString(name.name)  
@@ -144,50 +143,3 @@ private[spray] trait ParameterDirectives {
   implicit def fromString(name: String) = new SimpleFieldMatcher(name, DefaultUnmarshallers.StringUnmarshaller)
 }
 
-trait FieldMatcher[A] {
-  val name : String
-
-  def apply(fields: FieldMap): Either[Rejection, A]
-
-  def ? = new OptionWrappingFieldMatcher(this)
-  
-  def ? [B :Unmarshaller](default: B) = new SimpleFieldMatcher[B](name, cc.spray.unmarshaller[B]) {
-    override def notFound = Right(default)
-  }
-  
-  def as[B :Unmarshaller] = new SimpleFieldMatcher[B](name, cc.spray.unmarshaller[B])
-  
-  def ! [B :Unmarshaller](requiredValue: B): RequiredFieldMatcher = { params =>
-    new SimpleFieldMatcher[B](name, cc.spray.unmarshaller[B])
-      .apply(params.mapValues(HttpContent.apply(_)))
-      .right
-      .toOption == Some(requiredValue)
-  }
-}
-
-class SimpleFieldMatcher[A](val name: String, val unmarshaller: Unmarshaller[A]) extends FieldMatcher[A] {
-  def apply(fields: FieldMap): Either[Rejection, A] = {
-    fields.get(name) match {
-      case Some(value) => unmarshaller(value.contentType) match {
-        case UnmarshalWith(converter) => converter(value) match {
-          case Left(MalformedRequestContentRejection(msg)) => Left(MalformedQueryParamRejection(msg, Some(name)))
-          case other => other
-        }
-        case CantUnmarshal(onlyFrom) => Left(UnsupportedRequestContentTypeRejection(onlyFrom)) // This one does not really make sense in the case of parameters. Should we have a dedicated rejection?
-      }
-      case None => notFound
-    }
-  }
-
-  protected def notFound: Either[Rejection, A] = Left(MissingQueryParamRejection(name))
-}
-
-class OptionWrappingFieldMatcher[A](wrapped : FieldMatcher[A]) extends FieldMatcher[Option[A]] {
-  val name = wrapped.name
-
-  override def apply(fields: FieldMap): Either[Rejection, Option[A]] = wrapped.apply(fields) match {
-    case Right(value) => Right(Some(value))
-    case Left(MissingQueryParamRejection(_)) => Right(None)
-    case Left(other) => Left(other)
-  }
-}

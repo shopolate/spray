@@ -176,7 +176,7 @@ trait DefaultUnmarshallers {
       FormContent {
         val data = DefaultUnmarshallers.StringUnmarshaller.unmarshal(content).right.get
         val charset = content.contentType.charset.getOrElse(`ISO-8859-1`).aliases.head
-        URLDecoder.decode(data, charset).fastSplit('&').map {
+        URLDecoder.decode(data, charset).fastSplit('&').filter(_ != "").map {
           _.fastSplit('=') match {
             case key :: value :: Nil => (key, value)
             case _ => throw new IllegalArgumentException("'" + data + "' is not a valid form content")

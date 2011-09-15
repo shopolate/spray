@@ -34,7 +34,7 @@ package object spray {
   type GeneralAuthenticator[U] = RequestContext => Either[Rejection, U]
   type UserPassAuthenticator[U] = Option[(String, String)] => Option[U]
   type CacheKeyer = RequestContext => Option[Any]
-  type RequiredFieldMatcher = Map[String, String] => Boolean
+  type RequiredFieldMatcher = Map[String, HttpContent] => Boolean
   type FieldMap = Map[String, HttpContent]
 
   def make[A, U](a: A)(f: A => U): A = { f(a); a }

@@ -107,6 +107,12 @@ class HttpServiceLogicSpec extends AbstractSprayTest {
       }.response mustEqual HttpResponse(BadRequest, "The requests encoding is corrupt:\nNot in GZIP format")
     }
     "respond with BadRequest for requests resulting in a MalformedQueryParamRejection" in {
+      testService(HttpRequest(POST, content = Some(HttpContent(`application/x-www-form-urlencoded`, "amount=xyz")))) {
+        formField('amount.as[Int]) { _ => completeOk }
+      }.response mustEqual HttpResponse(BadRequest, "The form field 'amount' was malformed:\n" +
+              "'xyz' is not a valid 32-bit integer value")
+    }
+    "respond with BadRequest for requests resulting in a MalformedFormFieldRejection" in {
       testService(HttpRequest(POST, "/?amount=xyz")) {
         parameters('amount.as[Int]) { _ => completeOk }
       }.response mustEqual HttpResponse(BadRequest, "The query parameter 'amount' was malformed:\n" +
@@ -128,6 +134,11 @@ class HttpServiceLogicSpec extends AbstractSprayTest {
       testService(HttpRequest(POST)) {
         parameters('amount, 'orderId) { (_, _) => completeOk }
       }.response mustEqual HttpResponse(NotFound, "Request is missing required query parameter 'amount'")
+    }
+    "respond with NotFound for requests resulting in a MissingFormFieldRejection" in {
+      testService(HttpRequest(POST, content = Some(HttpContent(`application/x-www-form-urlencoded`, "")))) {
+        formFields('amount, 'orderId) { (_, _) => completeOk }
+      }.response mustEqual HttpResponse(NotFound, "Request form is missing required field 'amount'")
     }
     "respond with BadRequest for requests resulting in RequestEntityExpectedRejection" in {
       testService(HttpRequest(POST)) {

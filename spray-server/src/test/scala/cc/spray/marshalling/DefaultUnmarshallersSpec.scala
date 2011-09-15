@@ -137,6 +137,12 @@ class DefaultUnmarshallersSpec extends AbstractSprayTest {
         content(as[FormContent]) { echoComplete }
       }.response.content.as[String] mustEqual Right("FormContent(Map(secret -> x?!54))")
     }
+    "correctly unmarshal HTML form content with no element" in {
+      test(HttpRequest(content = Some(HttpContent(ContentType(`application/x-www-form-urlencoded`, `UTF-8`),
+        "")))) {
+        content(as[FormContent]) { echoComplete }
+      }.response.content.as[String] mustEqual Right("FormContent(Map())")
+    }
     "correctly unmarshal HTML form content with three elements" in {
       test(HttpRequest(content = Some(HttpContent(ContentType(`application/x-www-form-urlencoded`, `ISO-8859-1`),
         "email=test%40there.com&password=&username=dirk")))) {

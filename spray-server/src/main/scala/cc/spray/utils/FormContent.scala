@@ -16,4 +16,8 @@
 
 package cc.spray.utils
 
-case class FormContent(elements: Map[String, String])
+import cc.spray.http.HttpContent
+
+case class FormContent(elements: Map[String, String]) extends FieldSource {
+  def fields = elements.mapValues(HttpContent(_)) // Should we memoize here?
+}

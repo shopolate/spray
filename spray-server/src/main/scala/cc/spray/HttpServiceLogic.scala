@@ -87,12 +87,15 @@ trait HttpServiceLogic extends ErrorHandling {
       case CorruptRequestEncodingRejection(msg) :: _ => HttpResponse(BadRequest, "The requests encoding is corrupt:\n" + msg)
       case MalformedQueryParamRejection(msg, Some(name)) :: _ => HttpResponse(BadRequest, "The query parameter '" + name + "' was malformed:\n" + msg)
       case MalformedQueryParamRejection(msg, None) :: _ => HttpResponse(BadRequest, "One or more query parameters were illegal:\n" + msg)
+      case MalformedFormFieldRejection(msg, Some(name)) :: _ => HttpResponse(BadRequest, "The form field '" + name + "' was malformed:\n" + msg)
+      case MalformedFormFieldRejection(msg, None) :: _ => HttpResponse(BadRequest, "One or more form fields were illegal:\n" + msg)
       case MalformedRequestContentRejection(msg) :: _ => HttpResponse(BadRequest, "The request content was malformed:\n" + msg)
       case (_: MethodRejection) :: _ =>
         // TODO: add Allow header (required by the spec)
         val methods = rejections.collect { case MethodRejection(method) => method }
         HttpResponse(MethodNotAllowed, "HTTP method not allowed, supported methods: " + methods.mkString(", "))
       case MissingQueryParamRejection(paramName) :: _ => HttpResponse(NotFound, "Request is missing required query parameter '" + paramName + '\'')
+      case MissingFormFieldRejection(paramName) :: _ => HttpResponse(NotFound, "Request form is missing required field '" + paramName + '\'')
       case RequestEntityExpectedRejection :: _ => HttpResponse(BadRequest, "Request entity expected but not supplied")
       case (_: UnacceptedResponseContentTypeRejection) :: _ =>
         val supported = rejections.flatMap { case UnacceptedResponseContentTypeRejection(supported) => supported }

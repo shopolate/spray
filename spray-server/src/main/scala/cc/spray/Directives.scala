@@ -30,6 +30,7 @@ trait Directives
         with MarshallingDirectives
         with MiscDirectives
         with ParameterDirectives
+        with FormFieldDirectives
         with CaseClassExtractionDirectives
         with PathDirectives
         with SecurityDirectives
